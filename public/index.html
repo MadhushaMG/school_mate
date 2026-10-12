@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SchoolMate - Smart School Van & Bus SaaS Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --primary-light: #EEF2FF;
+      --bus-yellow: #F59E0B;
+      --bus-yellow-hover: #D97706;
+      --success: #10B981;
+      --success-text: #047857;
+      --success-bg: #ECFDF5;
+      --success-border: #A7F3D0;
+      --danger: #EF4444;
+      --danger-text: #B91C1C;
+      --danger-bg: #FEF2F2;
+      --danger-border: #FECACA;
+      --warning: #F59E0B;
+      --warning-text: #B45309;
+      --warning-bg: #FFFBEB;
+      --warning-border: #FDE68A;
+      --info: #3B82F6;
+      --info-text: #1D4ED8;
+      --info-bg: #EFF6FF;
+      --info-border: #BFDBFE;
+
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --surface-subtle: #F1F5F9;
+      --border: #E2E8F0;
+      --border-light: #F1F5F9;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --text-dim: #94A3B8;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+      --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    /* TOP HEADER */
+    .top-header {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 16px 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .brand-name {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-saas {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #C7D2FE;
+      border-radius: 20px;
+    }
+
+    .brand-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-pills {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ws-status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+    }
+
+    .ws-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    /* MAIN CONTAINER */
+    .app-workspace {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .app-workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* PHONE FRAME (Sleek Modern Titanium/White Mockup) */
+    .phone-container {
+      background: #FFFFFF;
+      border: 10px solid #E2E8F0;
+      border-radius: 46px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.03);
+      position: relative;
+    }
+
+    .phone-notch {
+      width: 130px;
+      height: 22px;
+      background: #E2E8F0;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .notch-camera {
+      width: 9px;
+      height: 9px;
+      background: #94A3B8;
+      border-radius: 50%;
+    }
+
+    .phone-screen {
+      background: var(--bg);
+      height: 740px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding-top: 22px;
+    }
+
+    /* APP TOP NAV */
+    .app-top-nav {
+      padding: 12px 18px;
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .role-switch-pill {
+      display: flex;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3px;
+    }
+
+    .role-btn {
+      padding: 5px 14px;
+      border-radius: 18px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .role-btn.active {
+      background: #FFFFFF;
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* APP TABS */
+    .app-tabs {
+      display: flex;
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: #F8FAFC;
+    }
+
+    /* SCROLLABLE VIEWPORT */
+    .app-viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .app-viewport::-webkit-scrollbar {
+      width: 4px;
+    }
+    .app-viewport::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+
+    /* CHILD SELECTOR */
+    .child-selector {
+      display: flex;
+      gap: 10px;
+    }
+
+    .child-chip {
+      flex: 1;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+    }
+
+    .child-chip.active {
+      border-color: var(--primary);
+      background: #F5F7FF;
+    }
+
+    .chip-avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: var(--surface-subtle);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+    }
+
+    .chip-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .child-chip.active .chip-name {
+      color: var(--primary);
+    }
+
+    .chip-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* CARD COMPONENT */
+    .card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .cutoff-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border: 1px solid var(--warning-border);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    /* ATTENDANCE BOX */
+    .attendance-box {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .att-text-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .att-text-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .toggle-att-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .toggle-att-btn.coming {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+    }
+
+    .toggle-att-btn.absent {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+    }
+
+    /* RADAR MAP CANVAS */
+    .map-box {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      height: 110px;
+      position: relative;
+      overflow: hidden;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .road-line {
+      width: 100%;
+      height: 6px;
+      background: #E2E8F0;
+      position: relative;
+      margin: 0 16px;
+      border-radius: 3px;
+    }
+
+    .road-progress {
+      height: 100%;
+      background: var(--bus-yellow);
+      border-radius: 3px;
+      width: 25%;
+      transition: width 0.4s ease;
+    }
+
+    .stop-marker {
+      position: absolute;
+      top: -26px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stop-marker-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 14px;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stop-marker-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      margin-top: 3px;
+    }
+
+    .van-marker {
+      position: absolute;
+      top: -18px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: left 0.4s ease;
+    }
+
+    .van-marker-icon {
+      font-size: 24px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    }
+
+    .van-speed-pill {
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--warning-text);
+      background: #FFFFFF;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      margin-top: -4px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* METRICS GRID */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .metric-item {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 9px;
+      text-align: center;
+    }
+
+    .metric-lbl {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .metric-val {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      margin-top: 3px;
+    }
+
+    /* SEARCH INPUTS */
+    .search-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .text-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .text-input:focus {
+      border-color: var(--primary);
+      background: #FFFFFF;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--warning-text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* VEHICLE CARD */
+    .vehicle-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .veh-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .veh-plate {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .veh-model {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .seat-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 9px;
+      border-radius: 6px;
+    }
+
+    .seat-badge.available {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+    }
+
+    .seat-badge.full {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+    }
+
+    .route-info-box {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tags-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .veh-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .req-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .req-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .req-btn:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
+    }
+
+    /* DRIVER CHECKLIST */
+    .checklist-item {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .checklist-item.absent {
+      opacity: 0.7;
+      background: #FEF2F2;
+      border-color: #FECACA;
+    }
+
+    .check-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .order-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 13px;
+      background: var(--surface-subtle);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .check-details {
+      flex: 1;
+    }
+
+    .check-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .check-school {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .check-addr {
+      font-size: 10px;
+      color: #475569;
+      margin-top: 2px;
+    }
+
+    .intent-pill {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .intent-pill.coming {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+    }
+
+    .intent-pill.absent {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+    }
+
+    .driver-actions-row {
+      display: flex;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .board-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .board-btn.pending {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .board-btn.done {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .horn-btn {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border: 1px solid var(--warning-border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* RIGHT CONTROL PANEL */
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .panel-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .simulation-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sim-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sim-slider {
+      flex: 1;
+      height: 6px;
+      background: #CBD5E1;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .sim-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sim-action-btn {
+      flex: 1;
+      padding: 8px;
+      background: #FFFFFF;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sim-action-btn:hover {
+      background: var(--surface-subtle);
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+
+    .feature-item strong {
+      color: var(--text);
+    }
+
+    .feature-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .toast-popup {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-md);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header class="top-header">
+    <div class="brand-wrap">
+      <span class="brand-logo">🚐</span>
+      <div>
+        <div class="brand-name">
+          SchoolMate <span class="badge-saas">SaaS Platform</span>
+        </div>
+        <div class="brand-desc">Smart School Transport Attendance, GPS Live Tracking & Marketplace</div>
+      </div>
+    </div>
+
+    <div class="header-pills">
+      <div class="ws-status-badge" id="wsStatus">
+        <span class="ws-pulse"></span>
+        <span>WebSocket Live</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- WORKSPACE -->
+  <main class="app-workspace">
+
+    <!-- MOBILE DEVICE MOCKUP -->
+    <div class="phone-container">
+      <div class="phone-notch"><div class="notch-camera"></div></div>
+
+      <div class="phone-screen">
+        <!-- TOP NAV: ROLE SWITCHER -->
+        <nav class="app-top-nav">
+          <span style="font-weight: 800; font-size: 16px; color: var(--text);">SchoolMate</span>
+
+          <div class="role-switch-pill">
+            <button class="role-btn active" id="btnRoleParent" onclick="setRole('PARENT')">Parent</button>
+            <button class="role-btn" id="btnRoleDriver" onclick="setRole('DRIVER')">Driver</button>
+          </div>
+        </nav>
+
+        <!-- VIEWPORT: PARENT FLOW -->
+        <div id="parentView" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+          <div class="app-tabs">
+            <button class="tab-btn active" id="pTabTracking" onclick="setParentTab('TRACKING')">Live Van</button>
+            <button class="tab-btn" id="pTabMarketplace" onclick="setParentTab('MARKETPLACE')">Find Vans</button>
+            <button class="tab-btn" id="pTabAlerts" onclick="setParentTab('ALERTS')">Alerts</button>
+          </div>
+
+          <div class="app-viewport">
+            <!-- CHILD PROFILE SWITCHER -->
+            <div class="child-selector">
+              <div class="child-chip active" id="chipKasun" onclick="selectChild(0)">
+                <div class="chip-avatar-circle">👦</div>
+                <div>
+                  <div class="chip-name">Kasun Perera</div>
+                  <div class="chip-meta">Gr. 5 • Ananda College</div>
+                </div>
+              </div>
+
+              <div class="child-chip" id="chipSenuri" onclick="selectChild(1)">
+                <div class="chip-avatar-circle">👧</div>
+                <div>
+                  <div class="chip-name">Senuri Perera</div>
+                  <div class="chip-meta">Gr. 2 • Musaeus College</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PARENT SECTION 1: LIVE TRACKING & ATTENDANCE -->
+            <div id="secParentTracking">
+              <!-- 1. ATTENDANCE CARD -->
+              <div class="card" style="margin-bottom: 12px;">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">Daily Trip Attendance</div>
+                    <div class="card-sub">Morning Journey: 06:15 AM - 07:30 AM</div>
+                  </div>
+                  <div class="cutoff-badge">Cut-off: 5:45 AM</div>
+                </div>
+
+                <div class="attendance-box">
+                  <div>
+                    <div class="att-text-title" id="attChildPrompt">Is Kasun attending today?</div>
+                    <div class="att-text-sub" id="attChildSub">Van will stop at your gate for pickup.</div>
+                  </div>
+
+                  <button class="toggle-att-btn coming" id="btnToggleAttendance" onclick="toggleCurrentChildAttendance()">
+                    <span>●</span> <span id="lblAttStatus">COMING</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2. LIVE RADAR MAP CARD -->
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">Live Van Radar</div>
+                    <div class="card-sub">WP NB-4821 (Nimal Fernando)</div>
+                  </div>
+                  <div style="font-size: 10px; font-weight: 800; color: var(--success-text); background: var(--success-bg); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--success-border);">
+                    ● LIVE GPS
+                  </div>
+                </div>
+
+                <!-- Animated Road Map -->
+                <div class="map-box">
+                  <div class="road-line">
+                    <div class="road-progress" id="roadFill"></div>
+
+                    <!-- Stops -->
+                    <div class="stop-marker" style="left: 0%;">
+                      <div class="stop-marker-circle">🏁</div>
+                      <span class="stop-marker-title">Depot</span>
+                    </div>
+
+                    <div class="stop-marker" style="left: 55%;">
+                      <div class="stop-marker-circle" id="gateIcon">🏠</div>
+                      <span class="stop-marker-title">Your Gate</span>
+                    </div>
+
+                    <div class="stop-marker" style="left: 100%;">
+                      <div class="stop-marker-circle">🏫</div>
+                      <span class="stop-marker-title">School</span>
+                    </div>
+
+                    <!-- Moving Van -->
+                    <div class="van-marker" id="vanMarker" style="left: 20%;">
+                      <span class="van-marker-icon">🚐</span>
+                      <span class="van-speed-pill" id="vanSpeed">32 km/h</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                  <div class="metric-item">
+                    <div class="metric-lbl">STATUS</div>
+                    <div class="metric-val" id="metricStatus" style="color: var(--bus-yellow-hover);">Awaiting Pickup</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-lbl">EST. ARRIVAL</div>
+                    <div class="metric-val" id="metricEta">~7 mins</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-lbl">DISTANCE</div>
+                    <div class="metric-val" id="metricDist">1.4 km</div>
+                  </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                  <button class="sim-action-btn" onclick="showToast('Calling driver Nimal on 077 123 4567')">📞 Call Driver</button>
+                  <button class="sim-action-btn" style="background: var(--primary); color: #fff; border-color: var(--primary);" onclick="showToast('Alert sent: Kasun is stepping out of the gate now!')">🏃 "At the Gate"</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- PARENT SECTION 2: MARKETPLACE -->
+            <div id="secParentMarketplace" style="display: none;">
+              <div class="card" style="margin-bottom: 12px;">
+                <div class="card-title">Find School Vans & Buses</div>
+                <div class="card-sub">Browse verified drivers with open seats matching your school</div>
+
+                <div class="search-inputs">
+                  <input type="text" class="text-input" id="searchArea" placeholder="Pickup Town (e.g. Maharagama, Nugegoda)" oninput="filterVehicles()">
+                  <input type="text" class="text-input" id="searchSchool" placeholder="School (e.g. Ananda, Royal, Musaeus)" oninput="filterVehicles()">
+                  <label class="checkbox-row">
+                    <input type="checkbox" id="chkOnlySeats" onchange="filterVehicles()">
+                    <span>Show vehicles with available seats only</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="vehicleListings" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- PARENT SECTION 3: NOTIFICATIONS -->
+            <div id="secParentAlerts" style="display: none;">
+              <div class="card">
+                <div class="card-title">Real-Time Alerts</div>
+                <div class="card-sub">Automatic notifications for today's school trip</div>
+
+                <div id="alertsList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                  <div class="toast-popup">
+                    <span>🚀</span>
+                    <div>
+                      <strong>Trip Started</strong>
+                      <div style="font-size: 10px; color: var(--text-muted);">Driver Nimal began Morning Trip at 06:14 AM</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- VIEWPORT: DRIVER FLOW -->
+        <div id="driverView" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
+          <div class="app-tabs">
+            <button class="tab-btn active" id="dTabChecklist" onclick="setDriverTab('CHECKLIST')">Checklist</button>
+            <button class="tab-btn" id="dTabInquiries" onclick="setDriverTab('INQUIRIES')">Requests (1)</button>
+            <button class="tab-btn" id="dTabCapacity" onclick="setDriverTab('CAPACITY')">Fleet</button>
+          </div>
+
+          <div class="app-viewport">
+            <!-- DRIVER SECTION 1: CHECKLIST -->
+            <div id="secDriverChecklist">
+              <div class="card" style="margin-bottom: 12px;">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">Morning Route (Trip Active)</div>
+                    <div class="card-sub">WP NB-4821 • Toyota KDH</div>
+                  </div>
+                  <button style="padding: 6px 12px; background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); font-size: 11px; font-weight: 800; border-radius: 6px; cursor: pointer;">
+                    🛑 End Trip
+                  </button>
+                </div>
+
+                <div class="metrics-grid">
+                  <div class="metric-item">
+                    <div class="metric-lbl">TOTAL</div>
+                    <div class="metric-val">12 Kids</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-lbl">COMING</div>
+                    <div class="metric-val" style="color: var(--success-text);" id="dCountComing">10 Kids</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-lbl">ABSENT</div>
+                    <div class="metric-val" style="color: var(--danger-text);" id="dCountAbsent">2 Skip</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px;">TODAY'S PICKUP SEQUENCE:</div>
+              <div id="driverChecklistContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- DRIVER SECTION 2: INQUIRIES -->
+            <div id="secDriverInquiries" style="display: none;">
+              <div class="card">
+                <div class="card-title">Parent Booking Requests</div>
+                <div class="card-sub">Review pickup location & approve seat reservations</div>
+
+                <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;" id="driverRequestsList">
+                  <div class="card" style="background: var(--bg); border-color: var(--border);">
+                    <div style="display: flex; justify-content: space-between;">
+                      <strong style="color: var(--text); font-size: 14px;">Dulith Wickrama</strong>
+                      <span class="cutoff-badge">PENDING</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Grade 4 • Ananda College</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">📍 Nawinna Junction, Maharagama</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-top: 4px;">Rs. 8,500 / month</div>
+
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                      <button class="req-btn" style="flex: 1; background: var(--success); font-size: 11px;" onclick="acceptBooking(this)">✓ Accept & Reserve</button>
+                      <button class="req-btn" style="flex: 1; background: var(--danger); font-size: 11px;" onclick="declineBooking(this)">✕ Decline</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DRIVER SECTION 3: FLEET -->
+            <div id="secDriverCapacity" style="display: none;">
+              <div class="card">
+                <div class="card-title">Vehicle Capacity Manager</div>
+                <div class="card-sub">Seats automatically sync with marketplace search</div>
+
+                <div class="metrics-grid" style="margin: 12px 0;">
+                  <div class="metric-item">
+                    <div class="metric-lbl">TOTAL SEATS</div>
+                    <div class="metric-val">14</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-lbl">BOOKED</div>
+                    <div class="metric-val" id="dFleetBooked">11</div>
+                  </div>
+                  <div class="metric-item">
+                    <div class="metric-lbl">FREE SEATS</div>
+                    <div class="metric-val" style="color: var(--success-text);" id="dFleetFree">3 Available</div>
+                  </div>
+                </div>
+
+                <div class="route-info-box">
+                  <strong>Operating Route:</strong>
+                  <span>Maharagama ➔ Nugegoda ➔ Bambalapitiya ➔ Colombo 07</span>
+                  <div style="margin-top: 4px;">Schools: Ananda, Nalanda, Musaeus, D.S. Senanayake</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT CONTROL & DEMO PANEL -->
+    <div class="control-panel">
+      <!-- SIMULATION CONTROLS -->
+      <div class="panel-card">
+        <div class="panel-title">🕹️ Real-Time Demo Controls</div>
+        <div class="panel-desc">
+          Drag the slider or click Play to simulate the school van driving along its route in real time. Watch the 40m Auto-Pickup and 1km proximity alerts!
+        </div>
+
+        <div class="simulation-box">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700;">
+            <span style="color: var(--text);">Route Progress:</span>
+            <span id="sliderVal" style="color: var(--primary);">25%</span>
+          </div>
+
+          <div class="sim-slider-row">
+            <input type="range" class="sim-slider" id="progressSlider" min="0" max="100" value="25" oninput="onSliderMove(this.value)">
+          </div>
+
+          <div class="sim-btn-row">
+            <button class="sim-action-btn" id="btnPlayPause" onclick="toggleAutoPlay()">▶️ Play Simulation</button>
+            <button class="sim-action-btn" onclick="resetSim()">↺ Reset Trip</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEY ARCHITECTURE HIGHLIGHTS -->
+      <div class="panel-card">
+        <div class="panel-title">⚡ Modern Light UI/UX Architecture</div>
+        <ul class="feature-list">
+          <li class="feature-item">
+            <span class="feature-icon">✨</span>
+            <div><strong>Modern Light Design Language:</strong> Crisp white card elevation, soft slate off-white surfaces (`#F8FAFC`), and clean typography.</div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">⚡</span>
+            <div><strong>Daily Attendance Intent:</strong> Parents toggle Coming/Absent. Drivers skip absent stops automatically, saving fuel and time.</div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">🎯</span>
+            <div><strong>Auto-Pickup Geofencing (40m):</strong> When the van arrives at the student's coordinates and slows down, it auto-marks "Picked Up" hands-free.</div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">🔔</span>
+            <div><strong>1KM Proximity Notification:</strong> Alert triggers automatically when the van enters a 1000m radius of the child's home.</div>
+          </li>
+          <li class="feature-item">
+            <span class="feature-icon">☁️</span>
+            <div><strong>Neon PostgreSQL Live:</strong> Full-stack backend connected to Neon DB with real verified driver and parent profiles.</div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- LIVE TOAST CONTAINER -->
+      <div id="toastArea" style="display: flex; flex-direction: column; gap: 8px;"></div>
+    </div>
+
+  </main>
+
+  <script>
+    const socket = io();
+    socket.on('connect', () => {
+      document.getElementById('wsStatus').innerHTML = '<span class="ws-pulse"></span><span>WebSocket Live</span>';
+    });
+    socket.on('disconnect', () => {
+      document.getElementById('wsStatus').innerHTML = '<span style="width:8px; height:8px; border-radius:50%; background:#EF4444;"></span><span style="color:#EF4444;">Offline</span>';
+    });
+
+    let currentRole = 'PARENT';
+    let currentParentTab = 'TRACKING';
+    let currentDriverTab = 'CHECKLIST';
+    let selectedChildIndex = 0;
+    let autoPlayInterval = null;
+    let currentProgress = 25;
+
+    let children = [
+      { id: 'c1', name: 'Kasun Perera', grade: 'Grade 5', school: 'Ananda College', address: 'No. 45, Temple Rd, Maharagama', isComing: true, status: 'PENDING' },
+      { id: 'c2', name: 'Senuri Perera', grade: 'Grade 2', school: 'Musaeus College', address: 'No. 45, Temple Rd, Maharagama', isComing: false, status: 'PENDING' }
+    ];
+
+    let vehicles = [
+      { id: 'v1', plate: 'WP NB-4821', model: 'Toyota Hiace KDH', type: 'VAN', totalSeats: 14, freeSeats: 3, hasAC: true, driver: 'Nimal Fernando', phone: '077 123 4567', rating: 4.9, start: 'Maharagama', end: 'Colombo 07', schools: ['Ananda College', 'Nalanda College', 'D.S. Senanayake', 'Musaeus College'], fee: 'Rs. 8,500 - 10,500' },
+      { id: 'v2', plate: 'WP ND-9102', model: 'Toyota Coaster Bus', type: 'BUS', totalSeats: 26, freeSeats: 5, hasAC: true, driver: 'Sunil Weerasinghe', phone: '071 987 6543', rating: 4.8, start: 'Nugegoda', end: 'Bambalapitiya', schools: ['Royal College', 'Visakha Vidyalaya', 'St. Peters'], fee: 'Rs. 9,000 - 11,500' },
+      { id: 'v3', plate: 'WP NC-2034', model: 'Nissan Caravan', type: 'VAN', totalSeats: 12, freeSeats: 0, hasAC: false, driver: 'Bandara Silva', phone: '076 555 8899', rating: 4.6, start: 'Kottawa', end: 'Colombo 10', schools: ['Ananda College', 'Zahira College'], fee: 'Rs. 7,500 - 9,000' }
+    ];
+
+    function setRole(role) {
+      currentRole = role;
+      document.getElementById('btnRoleParent').classList.toggle('active', role === 'PARENT');
+      document.getElementById('btnRoleDriver').classList.toggle('active', role === 'DRIVER');
+      document.getElementById('parentView').style.display = role === 'PARENT' ? 'flex' : 'none';
+      document.getElementById('driverView').style.display = role === 'DRIVER' ? 'flex' : 'none';
+    }
+
+    function setParentTab(tab) {
+      currentParentTab = tab;
+      document.getElementById('pTabTracking').classList.toggle('active', tab === 'TRACKING');
+      document.getElementById('pTabMarketplace').classList.toggle('active', tab === 'MARKETPLACE');
+      document.getElementById('pTabAlerts').classList.toggle('active', tab === 'ALERTS');
+
+      document.getElementById('secParentTracking').style.display = tab === 'TRACKING' ? 'block' : 'none';
+      document.getElementById('secParentMarketplace').style.display = tab === 'MARKETPLACE' ? 'block' : 'none';
+      document.getElementById('secParentAlerts').style.display = tab === 'ALERTS' ? 'block' : 'none';
+
+      if (tab === 'MARKETPLACE') renderVehicles();
+    }
+
+    function setDriverTab(tab) {
+      currentDriverTab = tab;
+      document.getElementById('dTabChecklist').classList.toggle('active', tab === 'CHECKLIST');
+      document.getElementById('dTabInquiries').classList.toggle('active', tab === 'INQUIRIES');
+      document.getElementById('dTabCapacity').classList.toggle('active', tab === 'CAPACITY');
+
+      document.getElementById('secDriverChecklist').style.display = tab === 'CHECKLIST' ? 'block' : 'none';
+      document.getElementById('secDriverInquiries').style.display = tab === 'INQUIRIES' ? 'block' : 'none';
+      document.getElementById('secDriverCapacity').style.display = tab === 'CAPACITY' ? 'block' : 'none';
+    }
+
+    function selectChild(index) {
+      selectedChildIndex = index;
+      document.getElementById('chipKasun').classList.toggle('active', index === 0);
+      document.getElementById('chipSenuri').classList.toggle('active', index === 1);
+      updateParentAttendanceUI();
+    }
+
+    function toggleCurrentChildAttendance() {
+      const child = children[selectedChildIndex];
+      child.isComing = !child.isComing;
+      updateParentAttendanceUI();
+      renderDriverChecklist();
+      showToast(child.isComing ? `🟢 ${child.name} marked COMING` : `🔴 ${child.name} marked ABSENT (Stop will be skipped)`);
+    }
+
+    function updateParentAttendanceUI() {
+      const child = children[selectedChildIndex];
+      const btn = document.getElementById('btnToggleAttendance');
+      const prompt = document.getElementById('attChildPrompt');
+      const sub = document.getElementById('attChildSub');
+
+      prompt.innerText = `Is ${child.name} attending today?`;
+
+      if (child.isComing) {
+        btn.className = 'toggle-att-btn coming';
+        btn.innerHTML = '<span>●</span> <span>COMING</span>';
+        sub.innerText = 'Van will stop at your gate for pickup.';
+      } else {
+        btn.className = 'toggle-att-btn absent';
+        btn.innerHTML = '<span>●</span> <span>ABSENT</span>';
+        sub.innerText = 'Driver will skip your stop to save time & fuel.';
+      }
+    }
+
+    let proximityTriggered = false;
+    let autoPickupTriggered = false;
+
+    function onSliderMove(val) {
+      currentProgress = parseInt(val);
+      document.getElementById('sliderVal').innerText = val + '%';
+      updateMapPosition(currentProgress);
+    }
+
+    function updateMapPosition(pct) {
+      document.getElementById('roadFill').style.width = pct + '%';
+      document.getElementById('vanMarker').style.left = Math.min(92, Math.max(4, pct)) + '%';
+
+      if (pct >= 40 && pct < 55 && !proximityTriggered) {
+        proximityTriggered = true;
+        showToast('🔔 1KM Proximity Alert: Van is 800m away! Please get Kasun ready.');
+        addAlertItem('🔔 1KM Proximity Alert', 'Van is 800m away (~3 mins) from your gate.');
+      }
+
+      if (pct >= 55 && pct < 65 && !autoPickupTriggered) {
+        autoPickupTriggered = true;
+        const child = children[0];
+        if (child.isComing && child.status === 'PENDING') {
+          child.status = 'PICKED_UP';
+          document.getElementById('gateIcon').innerText = '✅';
+          document.getElementById('metricStatus').innerText = 'On-Board (Safe)';
+          document.getElementById('metricStatus').style.color = 'var(--success-text)';
+          showToast('✨ Auto-Pickup Triggered! Van detected at gate. Kasun marked Picked Up.');
+          addAlertItem('✨ Auto-Pickup Confirmed', 'Kasun boarded the van at 07:12 AM (Auto-geofence detected)');
+          renderDriverChecklist();
+        }
+      }
+
+      if (pct >= 95) {
+        document.getElementById('metricStatus').innerText = 'Dropped at School';
+        document.getElementById('metricStatus').style.color = 'var(--info-text)';
+        document.getElementById('metricEta').innerText = 'Arrived';
+        document.getElementById('metricDist').innerText = '0 km';
+      } else {
+        const remainingToGate = Math.max(0, 55 - pct);
+        if (pct < 55) {
+          document.getElementById('metricEta').innerText = `~${Math.max(1, Math.round(remainingToGate * 0.3))} mins`;
+          document.getElementById('metricDist').innerText = `${(remainingToGate * 0.05).toFixed(1)} km`;
+        } else {
+          const remainingToSchool = 100 - pct;
+          document.getElementById('metricEta').innerText = `~${Math.max(2, Math.round(remainingToSchool * 0.4))} mins`;
+          document.getElementById('metricDist').innerText = `${(remainingToSchool * 0.08).toFixed(1)} km to School`;
+        }
+      }
+    }
+
+    function toggleAutoPlay() {
+      const btn = document.getElementById('btnPlayPause');
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        btn.innerText = '▶️ Play Simulation';
+      } else {
+        btn.innerText = '⏸️ Pause';
+        autoPlayInterval = setInterval(() => {
+          currentProgress += 2;
+          if (currentProgress > 100) currentProgress = 0;
+          document.getElementById('progressSlider').value = currentProgress;
+          document.getElementById('sliderVal').innerText = currentProgress + '%';
+          updateMapPosition(currentProgress);
+        }, 300);
+      }
+    }
+
+    function resetSim() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        document.getElementById('btnPlayPause').innerText = '▶️ Play Simulation';
+      }
+      currentProgress = 0;
+      proximityTriggered = false;
+      autoPickupTriggered = false;
+      children[0].status = 'PENDING';
+      document.getElementById('gateIcon').innerText = '🏠';
+      document.getElementById('metricStatus').innerText = 'Awaiting Pickup';
+      document.getElementById('metricStatus').style.color = 'var(--bus-yellow-hover)';
+      document.getElementById('progressSlider').value = 0;
+      document.getElementById('sliderVal').innerText = '0%';
+      updateMapPosition(0);
+      renderDriverChecklist();
+      showToast('Trip reset to start location.');
+    }
+
+    function renderVehicles() {
+      const list = document.getElementById('vehicleListings');
+      const townVal = document.getElementById('searchArea').value.toLowerCase();
+      const schoolVal = document.getElementById('searchSchool').value.toLowerCase();
+      const onlySeats = document.getElementById('chkOnlySeats').checked;
+
+      const filtered = vehicles.filter(v => {
+        const mTown = !townVal || v.start.toLowerCase().includes(townVal) || v.end.toLowerCase().includes(townVal);
+        const mSchool = !schoolVal || v.schools.some(s => s.toLowerCase().includes(schoolVal));
+        const mSeats = !onlySeats || v.freeSeats > 0;
+        return mTown && mSchool && mSeats;
+      });
+
+      list.innerHTML = filtered.map(v => `
+        <div class="vehicle-card">
+          <div class="veh-top">
+            <div>
+              <div class="veh-plate">${v.plate}</div>
+              <div class="veh-model">${v.model} (${v.type})</div>
+            </div>
+            <span class="seat-badge ${v.freeSeats > 0 ? 'available' : 'full'}">
+              ${v.freeSeats > 0 ? `${v.freeSeats} Seats Left` : 'Fully Booked'}
+            </span>
+          </div>
+
+          <div class="route-info-box">
+            <strong>📍 ${v.start} ➔ ${v.end}</strong>
+            <div>🏫 Schools: ${v.schools.join(', ')}</div>
+            <div class="tags-row">
+              <span class="tag">${v.hasAC ? '❄️ A/C' : '💨 Non-A/C'}</span>
+              <span class="tag">⭐ ${v.rating}</span>
+              <span class="tag">💰 ${v.fee}/mo</span>
+            </div>
+          </div>
+
+          <div class="veh-bottom">
+            <div style="font-size: 11px; color: var(--text-muted);">
+              Driver: <strong style="color: var(--text);">${v.driver}</strong> (${v.phone})
+            </div>
+            <button class="req-btn" ${v.freeSeats === 0 ? 'disabled' : ''} onclick="requestVehicle('${v.plate}')">
+              ${v.freeSeats > 0 ? 'Request Seat' : 'Full'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterVehicles() {
+      renderVehicles();
+    }
+
+    function requestVehicle(plate) {
+      showToast(`Request sent to driver of ${plate}! Driver will review pickup location.`);
+    }
+
+    function renderDriverChecklist() {
+      const container = document.getElementById('driverChecklistContainer');
+      const mockList = [
+        children[0],
+        children[1],
+        { id: 'c3', name: 'Naveen Fernando', grade: 'Grade 3', school: 'Nalanda College', address: 'Pamankada Road', isComing: true, status: 'PENDING' },
+        { id: 'c4', name: 'Dinuka Perera', grade: 'Grade 6', school: 'Ananda College', address: 'Borella Junction', isComing: true, status: 'PENDING' }
+      ];
+
+      const comingCount = mockList.filter(c => c.isComing).length;
+      const absentCount = mockList.filter(c => !c.isComing).length;
+      document.getElementById('dCountComing').innerText = `${comingCount} Kids`;
+      document.getElementById('dCountAbsent').innerText = `${absentCount} Skip`;
+
+      container.innerHTML = mockList.map((c, i) => `
+        <div class="checklist-item ${!c.isComing ? 'absent' : ''}">
+          <div class="check-top">
+            <div class="order-circle">#${i + 1}</div>
+            <div class="check-details">
+              <div class="check-name">${c.name}</div>
+              <div class="check-school">${c.grade} • ${c.school}</div>
+              <div class="check-addr">📍 ${c.address}</div>
+            </div>
+            <span class="intent-pill ${c.isComing ? 'coming' : 'absent'}">
+              ${c.isComing ? 'COMING' : 'NOT COMING'}
+            </span>
+          </div>
+
+          ${c.isComing ? `
+            <div class="driver-actions-row">
+              <button class="board-btn ${c.status === 'PICKED_UP' ? 'done' : 'pending'}" onclick="toggleDriverBoard('${c.id}')">
+                ${c.status === 'PICKED_UP' ? '✓ Boarded (Auto-Detected)' : 'Mark Picked Up'}
+              </button>
+              <button class="horn-btn" onclick="showToast('Horn alert sent to ${c.name}!')">📢 At Gate</button>
+            </div>
+          ` : `
+            <div style="font-size: 11px; color: var(--danger-text); background: var(--danger-bg); padding: 6px 10px; border-radius: 6px;">
+              ⚠️ Parent marked ABSENT. Skip stop to save time & fuel.
+            </div>
+          `}
+        </div>
+      `).join('');
+    }
+
+    function toggleDriverBoard(id) {
+      const child = children.find(c => c.id === id);
+      if (child) {
+        child.status = child.status === 'PICKED_UP' ? 'PENDING' : 'PICKED_UP';
+        renderDriverChecklist();
+        if (child.status === 'PICKED_UP') {
+          document.getElementById('metricStatus').innerText = 'On-Board (Safe)';
+          document.getElementById('metricStatus').style.color = 'var(--success-text)';
+          showToast(`✓ ${child.name} marked Boarded.`);
+        }
+      }
+    }
+
+    function acceptBooking(btn) {
+      btn.parentElement.innerHTML = '<span style="color:var(--success-text); font-weight:800; font-size:12px;">✓ Accepted! Seat Reserved.</span>';
+      vehicles[0].freeSeats -= 1;
+      document.getElementById('dFleetFree').innerText = `${vehicles[0].freeSeats} Available`;
+      showToast('Booking Accepted! Available seats updated on marketplace.');
+    }
+
+    function declineBooking(btn) {
+      btn.parentElement.innerHTML = '<span style="color:var(--danger-text); font-weight:800; font-size:12px;">✕ Declined</span>';
+      showToast('Request declined.');
+    }
+
+    function showToast(msg) {
+      const area = document.getElementById('toastArea');
+      const toast = document.createElement('div');
+      toast.className = 'toast-popup';
+      toast.innerHTML = `<span>💬</span> <span>${msg}</span>`;
+      area.prepend(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function addAlertItem(title, body) {
+      const list = document.getElementById('alertsList');
+      const item = document.createElement('div');
+      item.className = 'toast-popup';
+      item.innerHTML = `<span>🔔</span><div><strong>${title}</strong><div style="font-size:10px; color:var(--text-muted);">${body}</div></div>`;
+      list.prepend(item);
+    }
+
+    updateParentAttendanceUI();
+    renderDriverChecklist();
+    renderVehicles();
+    updateMapPosition(25);
+  </script>
+</body>
+</html>

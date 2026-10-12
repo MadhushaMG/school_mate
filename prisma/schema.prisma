@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  PARENT
+  DRIVER
+  ADMIN
+}
+
+enum VehicleType {
+  VAN
+  MINI_BUS
+  BUS
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum TripType {
+  MORNING_PICKUP
+  AFTERNOON_DROP
+}
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceIntent {
+  COMING
+  NOT_COMING
+}
+
+enum BoardingStatus {
+  PENDING
+  PICKED_UP
+  DROPPED
+  SKIPPED
+}
+
+model User {
+  id           String         @id @default(cuid())
+  fullName     String
+  email        String?        @unique
+  phoneNumber  String         @unique
+  password     String
+  role         UserRole       @default(PARENT)
+  homeAddress  String?
+  emergencyContact String?
+  avatarUrl    String?
+  pushToken    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  driverProfile DriverProfile?
+  children      Child[]
+  notifications Notification[]
+  passwordResetCodes PasswordResetCode[]
+
+  @@map("users")
+}
+
+model DriverProfile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber String?
+  isVerified    Boolean   @default(false)
+  vehicles      Vehicle[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("driver_profiles")
+}
+
+model Vehicle {
+  id              String        @id @default(cuid())
+  driverProfileId String
+  driverProfile   DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  vehicleNumber   String        @unique // e.g. "WP NB-4521"
+  model           String        // e.g. "Toyota Hiace KDH"
+  vehicleType     VehicleType   @default(VAN)
+  totalSeats      Int
+  availableSeats  Int
+  hasAC           Boolean       @default(false)
+  photoUrls       String[]      @default([])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  routes          Route[]
+  enrollments     Enrollment[]
+  dailyTrips      DailyTrip[]
+
+  @@map("vehicles")
+}
+
+model Route {
+  id                  String   @id @default(cuid())
+  vehicleId           String
+  vehicle             Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  title               String   // e.g. "Maharagama to Town Hall & Bambalapitiya Schools"
+  startTown           String   // e.g. "Maharagama"
+  endTown             String   // e.g. "Colombo 07"
+  schoolsCovered      String[] // ["Ananda College", "Nalanda College", "Visakha"]
+  morningStartTime    String   // "06:15 AM"
+  afternoonReturnTime String   // "02:00 PM"
+  minMonthlyFee       Float
+  maxMonthlyFee       Float
+  waypointsJson       String?  // JSON string array of coordinate stops
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("routes")
+}
+
+model Child {
+  id            String           @id @default(cuid())
+  parentId      String
+  parent        User             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  fullName      String
+  schoolName    String
+  grade         String
+  pickupAddress String
+  pickupLat     Float
+  pickupLng     Float
+  dropAddress   String?
+  dropLat       Float?
+  dropLng       Float?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  enrollments   Enrollment[]
+  attendances   TripAttendance[]
+
+  @@map("children")
+}
+
+model Enrollment {
+  id                  String           @id @default(cuid())
+  childId             String
+  child               Child            @relation(fields: [childId], references: [id], onDelete: Cascade)
+  vehicleId           String
+  vehicle             Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  status              EnrollmentStatus @default(PENDING)
+  monthlyFee          Float?
+  pickupSequenceIndex Int              @default(0)
+  parentNotes         String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@unique([childId, vehicleId])
+  @@map("enrollments")
+}
+
+model DailyTrip {
+  id             String           @id @default(cuid())
+  vehicleId      String
+  vehicle        Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  tripType       TripType         @default(MORNING_PICKUP)
+  tripDate       DateTime         @db.Date
+  status         TripStatus       @default(SCHEDULED)
+  currentLat     Float?
+  currentLng     Float?
+  currentHeading Float?
+  currentSpeed   Float?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attendances    TripAttendance[]
+
+  @@map("daily_trips")
+}
+
+model TripAttendance {
+  id             String           @id @default(cuid())
+  tripId         String
+  trip           DailyTrip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  childId        String
+  child          Child            @relation(fields: [childId], references: [id], onDelete: Cascade)
+  status         AttendanceIntent @default(COMING)
+  boardingStatus BoardingStatus   @default(PENDING)
+  isAutoGeofence Boolean          @default(false)
+  boardedAt      DateTime?
+  droppedAt      DateTime?
+  parentNotes    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([tripId, childId])
+  @@map("trip_attendances")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // e.g. "TRIP_STARTED", "PICKED_UP", "NEARBY_1KM", "ENROLLMENT_REQUEST"
+  isRead    Boolean  @default(false)
+  dataJson  String?  // JSON string
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model PasswordResetCode {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_codes")
+}
